@@ -1,0 +1,205 @@
+# Copy this file to config/rules.toml and edit the copy. rules.toml is gitignored, so your
+# answers never end up in the repo.
+#
+#   cp config/rules.example.toml config/rules.toml
+#
+# Everything the agent may say about you lives here or in your resume PDF(s) in profile/.
+# A blank answer ("") means unknown: the agent will NOT guess. It parks the job as needs_input
+# and writes the question to data/questions_pending.md. Answer it here and the job is retried
+# on the next run. `python3 scripts/doctor.py` lists every answer that's still blank.
+#
+# The example below targets product-management roles in New York, London and Berlin. Change
+# the regions, titles and floors to your own search.
+
+[run]
+enabled = true                  # false (or a file named STOP in this folder) halts applying at once
+dry_run = true                  # true: fill every form and screenshot it, never click Submit.
+                                # Set to false once you've reviewed a dry run.
+max_submissions_per_run = 10    # daily cap
+max_per_company = 2             # never more than this many applications to one company...
+company_cap_days = 60           # ...inside this many days
+min_score = 65                  # job-scorer threshold, 0-100
+score_batch_size = 60           # postings the scorer reads per run (the rest wait for the next run)
+region_order = ["new_york", "london", "berlin"]   # earlier = applied to first; keys match [regions.*]
+free_text_max_sentences = 2     # enforced by a hook on every typed answer
+accept_standard_attestations = false  # true: tick privacy/data-processing consent, background-check
+                                      # acknowledgment, accuracy certification and interview-conduct
+                                      # boxes. false: those forms park as needs_input.
+
+[discovery]
+ats = ["ashby", "greenhouse", "lever", "bamboohr", "breezy", "workable", "recruitee", "smartrecruiters",
+       "rippling"]
+max_posting_age_days = 45       # older postings are usually filled, stale, or evergreen
+full_sweep_every_days = 7       # poll every company weekly; daily runs poll companies with roles in your regions
+geo_memory_days = 120           # how long a company stays on the daily list after showing a role in your regions
+poll_workers = 16               # parallel requests while polling
+# Web searches the weekly refresh runs to find companies Common Crawl missed. Every job-site URL
+# in the results is added to the company list. One title and one city per query works best.
+web_searches = [
+  'site:jobs.ashbyhq.com "product manager" "New York"',
+  'site:job-boards.greenhouse.io "product manager" "New York"',
+  'site:jobs.lever.co "product manager" London',
+  'site:job-boards.greenhouse.io "product manager" London',
+  'site:apply.workable.com "product manager" Berlin',
+  'site:jobs.smartrecruiters.com "product manager" Berlin',
+]
+
+[companies]
+tech_only = true                # false: apply at any company and skip the check below
+# The scorer judges each new company once against this definition; the verdict is cached in
+# data/company_profiles.json (edit "tech" there to overrule it).
+definition = """Tech or tech-forward: software/SaaS, AI, fintech, crypto/web3, insurtech, payments,
+marketplaces, consumer internet, devtools, data/analytics, healthtech, climate tech, logistics tech,
+or any venture-backed startup or scale-up. Digital-first financial companies (neobanks, digital
+brokers, digital insurers) count. NOT: traditional banks and insurers, management consultancies and
+outsourcers, conglomerates, government and public bodies, schools and universities, hospitals and
+care providers, retail and restaurant chains, manufacturing, construction, real estate, law and
+accounting firms, staffing or recruiting agencies (including agency postings for an unnamed client)."""
+# Cheap checks in code, before the scorer sees anything (company name, or the industry a site reports)
+name_denylist = ["bank", "credit union", "hospital", "health system", "university", "college",
+  "school district", "government", "city of", "county of", "ministry", "church", "law firm", "llp",
+  "construction", "restaurant", "hotel", "casino", "staffing", "recruitment", "recruiting",
+  "executive search", "talent solutions", "manpower"]
+industry_denylist = ["Banking", "Government Administration", "Government Relations", "Hospital & Health Care",
+  "Hospitals and Health Care", "Construction", "Retail", "Oil & Energy", "Oil and Gas", "Food & Beverages",
+  "Hospitality", "Higher Education", "Education Management", "Primary/Secondary Education", "Law Practice",
+  "Legal Services", "Staffing and Recruiting", "Staffing & Recruiting", "Real Estate", "Restaurants",
+  "Mining & Metals", "Utilities", "Accounting", "Religious Institutions", "Military"]
+industry_allowlist = ["Computer Software", "Software Development", "Internet",
+  "Technology, Information and Internet", "Computer Games", "Blockchain Services"]
+
+# ---------- regions ----------
+# One table per city you're targeting. The key (new_york) is what region_order and the
+# [answers.<key>] tables below refer to.
+#   resume                   which PDF in profile/ to upload for jobs here ("" = ask before applying)
+#   location_keywords        matched as whole words against the posting's location
+#   location_exclude         optional: locations that look like a match but aren't
+#   remote_country_keywords  remote postings in these countries count for this region
+#   salary_currency          USD, CAD, GBP, EUR, DKK, SGD, HKD or JPY (pay parsing in scripts/ats.py)
+#   salary_floor             annual; a posted range whose top is below this is skipped. 0 = no pay filter
+#   title_include_extra      optional: titles to accept here on top of [targeting].title_include
+#   visa_rule                optional: tells the scorer when to skip for visa reasons
+#   min_score                optional: a higher bar than [run].min_score for this region
+
+[regions.new_york]
+resume = "profile/resume.pdf"
+location_keywords = ["new york", "nyc", "manhattan", "brooklyn"]
+remote_country_keywords = ["united states", "usa", "us"]
+salary_currency = "USD"
+salary_floor = 150000
+
+[regions.london]
+resume = "profile/resume.pdf"
+location_keywords = ["london"]
+location_exclude = ["canada", "ontario", "london, on", "london on"]   # London, Ontario is not London, UK
+remote_country_keywords = ["united kingdom", "uk", "england"]
+salary_currency = "GBP"
+salary_floor = 80000
+visa_rule = """Only skip for visa reasons when the posting says it can't sponsor or requires
+existing UK work rights. A posting that doesn't mention visas is not a skip."""
+
+[regions.berlin]
+resume = "profile/resume.pdf"   # e.g. "profile/resume-eu.pdf" to send a different version here
+location_keywords = ["berlin"]
+remote_country_keywords = ["germany"]
+salary_currency = "EUR"
+salary_floor = 85000
+title_include_extra = ["product owner"]
+
+[targeting]
+# Title prefilter (case-insensitive, whole words). "and" is normalised to "&".
+title_include = [
+  "product manager", "product lead", "head of product", "group product manager",
+  "product management", "product operations", "technical product manager",
+]
+title_exclude = [
+  "intern", "internship", "graduate", "junior", "associate", "assistant", "coordinator",
+  "engineer", "developer", "designer", "marketing manager", "account executive", "sales",
+  "vice president", "vp",
+]
+# The scorer reads these as plain English, so write them the way you'd brief a recruiter.
+seniority = """Senior product manager, lead or group PM, head of product. Skip roles asking for
+under ~5 years, and director or VP roles that manage other managers."""
+functions = """Product management for software products: B2B SaaS, developer tools, data and AI
+products, platform and API products, product operations."""
+domains = """Strongest fit: B2B SaaS, developer tools, data infrastructure, AI products.
+Fine: fintech, marketplaces. Weak: hardware, gaming, ad tech."""
+languages = "English (fluent)"
+# Skip any role that REQUIRES one of these above beginner level (fluent, native, bilingual,
+# business-level, working/professional proficiency), or whose posting is written mainly in one
+# of them. "A plus" / "preferred" / "nice to have" is fine. discover.py filters the obvious ones;
+# job-scorer catches the rest. If you speak one of them, add your level to `languages` and
+# [answers], and remove it here.
+blocked_languages = ["german", "french", "dutch", "danish", "portuguese",
+  "japanese", "mandarin", "cantonese", "chinese", "korean"]
+management_preference = """Happy to manage a small team. Subtract points when running a team of
+managers is the core of the job."""
+location_rule = """Skip roles that are on-site somewhere other than the job's region, or that
+require relocating to another country."""
+exclude_companies = []          # e.g. your current employer, or companies you've already ruled out
+
+# ---------- answers: same for every region ----------
+# Blank ("") = the agent asks you instead of answering. Examples are in the comments.
+[answers]
+full_name = ""                  # e.g. "Jordan Example"
+preferred_name = ""
+email = ""                      # e.g. "jordan@example.com"
+linkedin = ""                   # e.g. "https://www.linkedin.com/in/<you>"
+github = ""
+website = ""
+current_salary = ""             # leave blank if you'd rather not say; those forms go to needs_input
+salary_rule = """Salaries here are annual. If a form asks monthly, divide by 12.
+Where expected_salary is a range and a form needs one number, give the top of the range."""
+notice_period = ""              # e.g. "2 weeks"
+notice_days = 14                # tracker computes earliest_start_date from this
+total_years_experience = ""     # e.g. "8"
+years_rule = ""                 # e.g. "For 'N+ years of product management' questions, answer Yes when N <= 8."
+non_compete = ""                # "Yes" / "No"
+non_solicit = ""
+people_management = ""          # "Yes" if you've had direct reports
+people_management_years = ""
+willing_to_relocate = ""
+how_did_you_hear = "Company careers page"
+how_did_you_hear_rule = """If the options have no company careers page or company website choice, pick LinkedIn
+(or the closest social option); if there is no social option either, pick Other."""
+voluntary_self_id = "Decline to self-identify"   # gender, race/ethnicity, veteran, disability
+highest_education = ""          # e.g. "BSc Computer Science, Example University (2015)"
+field_of_study = ""
+certifications = ""
+english_level = "Fluent"        # add <language>_level for any other language you list in `languages`
+knows_someone_at_company = "No"
+previously_worked_at_company = "No"
+previous_employment_rule = """For any 'have you (ever) worked at <company> or its affiliates' question,
+pick No, or the 'I have not worked at <company>' option."""
+requires_reasonable_adjustments = "No"   # "Do you require reasonable adjustments / accommodations?"
+
+# Yes/no facts that come up on many forms. Add your own as you answer questions_pending.md.
+[answers.yes_no]
+criminal_convictions = ""       # "No", or the details in 2 sentences
+sms_whatsapp_application_updates = "No"   # opt-in to SMS/WhatsApp messages about the application
+available_in_office_5_days = ""
+
+# ---------- answers: per region (merged over the above) ----------
+[answers.new_york]
+phone = ""
+location = ""                   # where you'll say you're based for these jobs, e.g. "New York, NY"
+postal_code = ""
+work_authorization = ""         # e.g. "Yes, US citizen" or "No"
+requires_sponsorship = ""       # "Yes" / "No"
+expected_salary = ""            # e.g. "USD 170,000 per year"
+
+[answers.london]
+phone = ""
+location = ""
+postal_code = ""
+work_authorization = ""
+requires_sponsorship = ""
+expected_salary = ""
+
+[answers.berlin]
+phone = ""
+location = ""
+postal_code = ""
+work_authorization = ""
+requires_sponsorship = ""
+expected_salary = ""

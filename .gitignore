@@ -1,0 +1,14 @@
+# browser sessions, personal data, and run output stay local
+.browser-profile/
+data/*
+!data/.gitkeep
+profile/*
+!profile/README.md
+config/rules.toml
+config/resume.lock
+STOP
+
+.DS_Store
+__pycache__/
+*.pyc
+*.tmp

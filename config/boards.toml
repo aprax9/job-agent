@@ -1,0 +1,12 @@
+# Seed companies, polled on every run in addition to the full company list that
+# scripts/universe.py builds (thousands of companies). Supported sites: ashby, greenhouse, lever,
+# bamboohr, breezy, workable, recruitee, smartrecruiters, rippling. The token is the slug in the careers URL:
+#   boards.greenhouse.io/<token>   or   job-boards.greenhouse.io/<token>
+#   jobs.lever.co/<token>
+#   jobs.ashbyhq.com/<token>
+# These are examples; replace them with companies you actually want. You can also paste careers URLs
+# into a Claude Code session and ask it to add them. discover.py prints any token that doesn't resolve.
+
+greenhouse = ["gitlab", "dropbox", "airbnb", "cloudflare", "stripe"]
+lever = ["palantir", "spotify"]
+ashby = ["openai", "linear", "ramp", "notion"]
